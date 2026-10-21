@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">ClipDrop</string>
+    <string name="title_downloader">Video Downloader</string>
+    <string name="subtitle_tap_circle">Tippe auf den 3D-Kreis, um den Link aus der Zwischenablage herunterzuladen</string>
+    <string name="tap_to_download">Tippen zum Download</string>
+    <string name="clipboard_detected">Link erkannt</string>
+    <string name="clipboard_empty">Zwischenablage ist leer</string>
+    <string name="no_valid_url">Kein gültiger Video-Link in der Zwischenablage</string>
+    <string name="supported_platforms">Unterstützt: Instagram, TikTok, YouTube &amp; Facebook</string>
+    <string name="analyzing_link">Analysiere Link...</string>
+    <string name="downloading">Wird heruntergeladen...</string>
+    <string name="download_completed">Download abgeschlossen!</string>
+    <string name="download_failed">Download fehlgeschlagen</string>
+    <string name="paste_url_hint">Oder Videolink manuell einfügen...</string>
+    <string name="btn_paste">Einfügen</string>
+    <string name="tab_home">Downloader</string>
+    <string name="tab_downloads">Mediathek</string>
+    <string name="tab_settings">Einstellungen</string>
+    <string name="action_open">Öffnen</string>
+    <string name="action_share">Teilen</string>
+    <string name="action_delete">Löschen</string>
+    <string name="quality_hd">HD 1080p (Beste Qualität)</string>
+    <string name="quality_sd">SD 720p (Schneller Download)</string>
+    <string name="quality_audio">Audio MP3 (Nur Ton)</string>
+</resources>

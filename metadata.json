@@ -1,0 +1,6 @@
+{
+  "name": "ClipDrop",
+  "description": "Moderner Video-Downloader für Instagram, TikTok, YouTube und Facebook mit 3D-Download-Kreis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
