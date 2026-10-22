@@ -2,3 +2,7 @@
 android-sdk = "22"
 gradle = "latest"
 java = "21"
+
+[env]
+STORE_PASSWORD = "futurama"
+KEY_PASSWORD = "futurama"
