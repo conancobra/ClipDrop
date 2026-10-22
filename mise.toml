@@ -1,3 +1,4 @@
 [tools]
+android-sdk = "22"
 gradle = "latest"
-java = "latest"
+java = "21"
