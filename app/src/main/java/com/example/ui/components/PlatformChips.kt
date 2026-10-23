@@ -43,24 +43,36 @@ import com.example.ui.theme.InstagramPurple
 import com.example.ui.theme.TikTokPink
 import com.example.ui.theme.YouTubeRed
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Share
+
 @Composable
 fun PlatformChipsRow(
     selectedPlatform: PlatformType,
     onPlatformClick: (PlatformType) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scrollState = rememberScrollState()
+
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .horizontalScroll(scrollState)
             .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val platforms = listOf(
             PlatformItem(PlatformType.YOUTUBE, "YouTube", YouTubeRed, Icons.Default.PlayArrow),
             PlatformItem(PlatformType.INSTAGRAM, "Instagram", InstagramPurple, Icons.Default.CameraAlt),
             PlatformItem(PlatformType.TIKTOK, "TikTok", TikTokPink, Icons.Default.MusicNote),
-            PlatformItem(PlatformType.FACEBOOK, "Facebook", FacebookBlue, Icons.Default.ThumbUp)
+            PlatformItem(PlatformType.FACEBOOK, "Facebook", FacebookBlue, Icons.Default.ThumbUp),
+            PlatformItem(PlatformType.TWITTER, "X / Twitter", Color(0xFF1DA1F2), Icons.Default.Share),
+            PlatformItem(PlatformType.REDDIT, "Reddit", Color(0xFFFF4500), Icons.Default.Forum),
+            PlatformItem(PlatformType.PINTEREST, "Pinterest", Color(0xFFE60023), Icons.Default.Bookmark)
         )
 
         platforms.forEach { item ->

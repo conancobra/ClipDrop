@@ -16,20 +16,26 @@ enum class PlatformType(
     INSTAGRAM("Instagram", InstagramPurple, "camera_alt", "instagram.com"),
     TIKTOK("TikTok", TikTokPink, "music_note", "tiktok.com"),
     FACEBOOK("Facebook", FacebookBlue, "thumb_up", "facebook.com"),
+    TWITTER("X / Twitter", Color(0xFF1DA1F2), "share", "x.com"),
+    REDDIT("Reddit", Color(0xFFFF4500), "forum", "reddit.com"),
+    PINTEREST("Pinterest", Color(0xFFE60023), "push_pin", "pinterest.com"),
     OTHER("Web Video", Color(0xFF00E5FF), "movie", "web");
 
     companion object {
+        private val URL_PATTERN = java.util.regex.Pattern.compile("""https?://[^\s<>"']+""", java.util.regex.Pattern.CASE_INSENSITIVE)
+
         fun extractUrlFromText(text: String?): String? {
             if (text.isNullOrBlank()) return null
-            val matcher = java.util.regex.Pattern.compile("(https?://[^\\s\"'>]+)").matcher(text)
+            val matcher = URL_PATTERN.matcher(text)
             if (matcher.find()) {
-                val found = matcher.group(1)?.trim() ?: ""
-                // Strip common trailing punctuation often copied from chat messages
-                return found.trimEnd('.', ',', '!', '?', ';', ')', ']', '}')
+                val found = matcher.group(0)?.trim() ?: ""
+                return found.trimEnd('.', ',', ';', '!', '?', ')', ']', '}', '"', '\'')
+                    .takeIf { it.length > 10 }
             }
             val trimmed = text.trim()
             return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-                trimmed.trimEnd('.', ',', '!', '?', ';', ')', ']', '}')
+                trimmed.trimEnd('.', ',', ';', '!', '?', ')', ']', '}', '"', '\'')
+                    .takeIf { it.length > 10 }
             } else null
         }
 
@@ -42,6 +48,9 @@ enum class PlatformType(
                 lower.contains("instagram.com") || lower.contains("instagr.am") -> INSTAGRAM
                 lower.contains("tiktok.com") || lower.contains("vm.tiktok.com") || lower.contains("vt.tiktok.com") -> TIKTOK
                 lower.contains("facebook.com") || lower.contains("fb.watch") || lower.contains("fb.com") || lower.contains("fb.gg") -> FACEBOOK
+                lower.contains("twitter.com") || lower.contains("x.com") -> TWITTER
+                lower.contains("reddit.com") || lower.contains("redd.it") -> REDDIT
+                lower.contains("pinterest.com") || lower.contains("pin.it") -> PINTEREST
                 else -> OTHER
             }
         }
@@ -57,7 +66,13 @@ enum class PlatformType(
                     lower.contains("tiktok.com") ||
                     lower.contains("facebook.com") ||
                     lower.contains("fb.watch") ||
-                    lower.contains("fb.com")
+                    lower.contains("fb.com") ||
+                    lower.contains("twitter.com") ||
+                    lower.contains("x.com") ||
+                    lower.contains("reddit.com") ||
+                    lower.contains("redd.it") ||
+                    lower.contains("pinterest.com") ||
+                    lower.contains("pin.it")
 
             val isGeneralMedia = lower.startsWith("http://") || lower.startsWith("https://")
             return isKnownPlatform || (isGeneralMedia && (

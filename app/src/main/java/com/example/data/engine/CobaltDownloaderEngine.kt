@@ -40,9 +40,7 @@ class CobaltDownloaderEngine(
         
         // Verified community endpoints for Cobalt API
         val FALLBACK_APIS = listOf(
-            "https://api.cobalt.liubquanti.click/",
-            "https://api.urlvideodownload.com/",
-            "https://cobalt.liubquanti.click/api/"
+            "https://api.cobalt.liubquanti.click/"
         )
     }
 
@@ -76,16 +74,27 @@ class CobaltDownloaderEngine(
 
     private fun cleanUrl(rawUrl: String): String {
         var url = rawUrl.trim()
-        // Strip trailing punctuation
-        url = url.trimEnd('.', ',', '!', '?', ';', ')')
-        
-        // Remove tracking query params that confuse extractors, while keeping essential identifiers
+        // Strip trailing punctuation & quotes often copied from chat/share sheets
+        url = url.trimEnd('.', ',', '!', '?', ';', ')', ']', '}', '"', '\'')
+
+        // Clean query tracking params according to modern GitHub extractors
         if (url.contains("instagram.com") && url.contains("?")) {
             url = url.substringBefore("?")
-        } else if (url.contains("tiktok.com/@") && url.contains("?")) {
+        } else if (url.contains("tiktok.com") && url.contains("?")) {
             url = url.substringBefore("?")
         } else if (url.contains("youtu.be/")) {
-            url = url.substringBefore("&si=")
+            url = url.substringBefore("?si=").substringBefore("&si=")
+        } else if (url.contains("youtube.com/watch")) {
+            val videoId = url.substringAfter("v=").substringBefore("&")
+            if (videoId.isNotBlank()) {
+                url = "https://www.youtube.com/watch?v=$videoId"
+            }
+        } else if (url.contains("x.com") || url.contains("twitter.com")) {
+            url = url.substringBefore("?")
+        } else if (url.contains("reddit.com") || url.contains("redd.it")) {
+            url = url.substringBefore("?")
+        } else if (url.contains("pinterest.com") || url.contains("pin.it")) {
+            url = url.substringBefore("?")
         }
         return url
     }
@@ -101,94 +110,98 @@ class CobaltDownloaderEngine(
         var lastError = "Keine Verbindung zum Download-Server möglich."
 
         for (apiEndpoint in endpointsToTry) {
-            try {
-                val isAudioOnly = quality.equals("MP3", ignoreCase = true)
-                val jsonPayload = JSONObject().apply {
-                    put("url", resolvedUrl)
-                    if (isAudioOnly) {
-                        put("downloadMode", "audio")
-                        put("audioFormat", "mp3")
-                    } else {
-                        val cobaltQuality = when (quality) {
-                            "720p" -> "720"
-                            "1080p" -> "1080"
-                            else -> "max"
+            // Attempt with 1 automatic retry on transient network errors
+            for (attempt in 1..2) {
+                try {
+                    val isAudioOnly = quality.equals("MP3", ignoreCase = true)
+                    val jsonPayload = JSONObject().apply {
+                        put("url", resolvedUrl)
+                        if (isAudioOnly) {
+                            put("downloadMode", "audio")
+                            put("audioFormat", "mp3")
+                        } else {
+                            val cobaltQuality = when (quality) {
+                                "720p" -> "720"
+                                "1080p" -> "1080"
+                                else -> "max"
+                            }
+                            put("videoQuality", cobaltQuality)
                         }
-                        put("videoQuality", cobaltQuality)
                     }
-                }
 
-                val body = jsonPayload.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
-                val request = Request.Builder()
-                    .url(apiEndpoint)
-                    .addHeader("Accept", "application/json")
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("User-Agent", "ClipDrop/1.0 (Android; Linux)")
-                    .post(body)
-                    .build()
+                    val body = jsonPayload.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
+                    val request = Request.Builder()
+                        .url(apiEndpoint)
+                        .addHeader("Accept", "application/json")
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("User-Agent", "ClipDrop/1.0 (Android; Linux)")
+                        .post(body)
+                        .build()
 
-                val response = client.newCall(request).execute()
-                val responseString = response.body?.string()
+                    val response = client.newCall(request).execute()
+                    val responseString = response.body?.string()
 
-                if (!response.isSuccessful || responseString.isNullOrBlank()) {
-                    lastError = "Server antwortete mit Fehlercode: ${response.code}"
-                    continue
-                }
-
-                val jsonResponse = JSONObject(responseString)
-                val status = jsonResponse.optString("status", "")
-
-                if (status == "tunnel" || status == "redirect") {
-                    val directUrl = jsonResponse.optString("url")
-                    val filename = jsonResponse.optString("filename", "video.mp4")
-                    val title = filename.substringBeforeLast(".").ifBlank { "Video" }
-                    if (directUrl.isNotBlank()) {
-                        return@withContext ExtractionResult.Success(
-                            directDownloadUrl = directUrl,
-                            filename = filename,
-                            title = title
-                        )
+                    if (!response.isSuccessful || responseString.isNullOrBlank()) {
+                        lastError = "Server antwortete mit Status: ${response.code}"
+                        if (attempt < 2) continue
+                        break
                     }
-                } else if (status == "picker") {
-                    // Multi-item / carousel post
-                    val pickerArray = jsonResponse.optJSONArray("picker")
-                    if (pickerArray != null && pickerArray.length() > 0) {
-                        val firstItem = pickerArray.getJSONObject(0)
-                        val directUrl = firstItem.optString("url")
-                        val filename = "download_${System.currentTimeMillis()}.${if (isAudioOnly) "mp3" else "mp4"}"
+
+                    val jsonResponse = JSONObject(responseString)
+                    val status = jsonResponse.optString("status", "")
+
+                    if (status == "tunnel" || status == "redirect") {
+                        val directUrl = jsonResponse.optString("url")
+                        val filename = jsonResponse.optString("filename", "video.mp4")
+                        val title = filename.substringBeforeLast(".").ifBlank { "Video" }
                         if (directUrl.isNotBlank()) {
                             return@withContext ExtractionResult.Success(
                                 directDownloadUrl = directUrl,
                                 filename = filename,
-                                title = "Media Download"
+                                title = title
                             )
                         }
+                    } else if (status == "picker") {
+                        // Multi-item / carousel post
+                        val pickerArray = jsonResponse.optJSONArray("picker")
+                        if (pickerArray != null && pickerArray.length() > 0) {
+                            val firstItem = pickerArray.getJSONObject(0)
+                            val directUrl = firstItem.optString("url")
+                            val filename = "download_${System.currentTimeMillis()}.${if (isAudioOnly) "mp3" else "mp4"}"
+                            if (directUrl.isNotBlank()) {
+                                return@withContext ExtractionResult.Success(
+                                    directDownloadUrl = directUrl,
+                                    filename = filename,
+                                    title = "Media Download"
+                                )
+                            }
+                        }
+                    } else if (status == "error") {
+                        val errObj = jsonResponse.optJSONObject("error")
+                        val errCode = errObj?.optString("code") ?: jsonResponse.optString("text")
+
+                        val userFriendlyMsg = when {
+                            errCode.contains("unavailable") || errCode.contains("post.unavailable") ->
+                                "Dieses Video ist nicht verfügbar oder wurde entfernt."
+                            errCode.contains("private") ->
+                                "Dieses Video ist auf einem privaten Konto und kann nicht geladen werden."
+                            errCode.contains("age_restricted") ->
+                                "Dieses Video hat eine Altersbeschränkung."
+                            errCode.contains("rate_exceeded") ->
+                                "Server-Limit vorübergehend erreicht. Versuche es gleich noch einmal."
+                            else -> "Server-Meldung: $errCode"
+                        }
+
+                        lastError = userFriendlyMsg
+                        if (errCode.contains("unavailable") || errCode.contains("private") || errCode.contains("age_restricted")) {
+                            return@withContext ExtractionResult.Failure(userFriendlyMsg)
+                        }
                     }
-                } else if (status == "error") {
-                    val errObj = jsonResponse.optJSONObject("error")
-                    val errCode = errObj?.optString("code") ?: jsonResponse.optString("text")
-                    
-                    val userFriendlyMsg = when {
-                        errCode.contains("unavailable") || errCode.contains("post.unavailable") -> 
-                            "Dieses Video ist nicht verfügbar oder wurde entfernt."
-                        errCode.contains("private") -> 
-                            "Dieses Video ist auf einem privaten Konto und kann nicht geladen werden."
-                        errCode.contains("age_restricted") -> 
-                            "Dieses Video hat eine Altersbeschränkung."
-                        errCode.contains("rate_exceeded") -> 
-                            "Server-Limit vorübergehend erreicht. Versuche es gleich noch einmal."
-                        else -> "Server-Meldung: $errCode"
-                    }
-                    
-                    lastError = userFriendlyMsg
-                    // If content is private or removed, trying other instances won't change that
-                    if (errCode.contains("unavailable") || errCode.contains("private") || errCode.contains("age_restricted")) {
-                        return@withContext ExtractionResult.Failure(userFriendlyMsg)
-                    }
+                } catch (e: Exception) {
+                    Log.e("CobaltEngine", "Attempt $attempt failed on $apiEndpoint: ${e.message}")
+                    lastError = e.localizedMessage ?: "Netzwerkfehler beim Verbinden zum Server"
+                    if (attempt < 2) continue
                 }
-            } catch (e: Exception) {
-                Log.e("CobaltEngine", "Attempt failed on $apiEndpoint: ${e.message}")
-                lastError = e.localizedMessage ?: "Netzwerkfehler beim Verbinden zum Server"
             }
         }
 

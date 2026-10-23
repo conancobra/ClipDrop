@@ -32,6 +32,9 @@ class VideoMetadataExtractor(
             PlatformType.TIKTOK -> extractTikTok(url)
             PlatformType.INSTAGRAM -> extractInstagram(url)
             PlatformType.FACEBOOK -> extractFacebook(url)
+            PlatformType.TWITTER,
+            PlatformType.REDDIT,
+            PlatformType.PINTEREST,
             PlatformType.OTHER -> extractGeneric(url)
         }
     }

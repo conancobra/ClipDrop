@@ -113,7 +113,7 @@ fun SettingsScreen(
                         fontSize = 16.sp
                     )
                     Text(
-                        text = "Version 1.0 • Schneller 3D Video Saver",
+                        text = "Version 1.2 • Schneller Video Saver",
                         color = Color(0xFF94A3B8),
                         fontSize = 12.sp
                     )

@@ -127,10 +127,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         repository.resetActiveDownload()
                     }
                 } else {
-                    _snackbarMessage.value = "Zwischenablage ist leer"
+                    _snackbarMessage.value = "Zwischenablage ist leer. Bitte kopiere zuerst einen Video-Link."
                 }
             } else {
-                _snackbarMessage.value = "Zwischenablage ist leer"
+                _snackbarMessage.value = "Zwischenablage ist leer. Bitte kopiere zuerst einen Video-Link."
             }
         } catch (_: Exception) {
             _snackbarMessage.value = "Konnte Zwischenablage nicht lesen"
@@ -203,13 +203,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         if (targetUrl.isBlank()) {
-            _snackbarMessage.value = "Kopiere zuerst einen Video-Link aus TikTok, Instagram, YouTube oder Facebook!"
+            _snackbarMessage.value = "Zwischenablage ist leer. Kopiere einen Video-Link (YouTube, Instagram, TikTok, Facebook, X, Reddit) und tippe erneut!"
             return
         }
 
         val cleanUrl = PlatformType.extractUrlFromText(targetUrl) ?: targetUrl
         if (!PlatformType.isValidVideoUrl(cleanUrl)) {
-            _snackbarMessage.value = "Bitte einen gültigen Video-Link (YouTube, Instagram, TikTok oder Facebook) verwenden."
+            _snackbarMessage.value = "Bitte einen gültigen Video-Link verwenden."
             return
         }
 
